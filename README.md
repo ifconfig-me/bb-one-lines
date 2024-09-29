@@ -1,6 +1,6 @@
 # Bash Onelines for recon
 
-Here are some online liner bash script for recautomation.
+Here are some online liner bash script for recautomation. By using below scripts you can efficiently gather information during the reconnaissance phase, saving valuable time while automating the process.
 
 > [!WARNING]
 > WARNING: This script is for educational and ethical purposes only.
