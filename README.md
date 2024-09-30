@@ -222,7 +222,165 @@ curl -s https://$1 | grep "<!--" | tee html_comments.txt
 **Explanation:**
 - `curl` fetches the HTML source of the target domain, and `grep` looks for HTML comments (`<!-- ... -->`), saving them in `html_comments.txt`.
 
-Below is the script called `recon.sh` that combines all the reconnaissance tasks mentioned above. 
+### 21. **Extract Links from JavaScript Files**
+This one-liner extracts all URLs from JavaScript files of a domain by fetching all JS files and searching for URLs within them.
+
+```bash
+echo $1 | gau | grep "\.js$" | xargs -I{} curl -s {} | grep -oE "https?://[a-zA-Z0-9./?=_-]*" | tee js_links.txt
+```
+
+**Explanation:**
+- `gau` retrieves URLs for JavaScript files.
+- `curl` fetches the contents of each JavaScript file.
+- `grep` extracts all links (URLs) found within the files.
+- The results are saved in `js_links.txt`.
+
+---
+
+### 22. **Subdomain Enumeration with DNS Bruteforce**
+This one-liner uses `ffuf` to perform subdomain brute-forcing and `subfinder` to combine brute-force with passive enumeration.
+
+```bash
+ffuf -w /path/to/wordlist.txt -u https://FUZZ.$1 -H "Host: FUZZ.$1" -o ffuf_subdomains.txt && subfinder -d $1 -silent | tee combined_subdomains.txt
+```
+
+**Explanation:**
+- `ffuf` performs subdomain brute-forcing using a wordlist.
+- `subfinder` passively enumerates subdomains.
+- Both outputs are combined in `combined_subdomains.txt`.
+
+---
+
+### 23. **GitHub Dorking for Sensitive Information**
+This one-liner uses `github-endpoints.py` to fetch sensitive information such as API keys and tokens from GitHub repositories related to the domain.
+
+```bash
+python3 github-endpoints.py -d $1 -t <GITHUB_TOKEN> | tee github_sensitive.txt
+```
+
+**Explanation:**
+- `github-endpoints.py` searches GitHub for sensitive information like API keys, tokens, and credentials.
+- The results are stored in `github_sensitive.txt`.
+
+---
+
+### 24. **Find Endpoints via Wayback Machine with Specific Patterns**
+This one-liner fetches URLs from the Wayback Machine that match specific patterns, such as `.php` files.
+
+```bash
+echo $1 | gau | grep -E "\.php|\.asp|\.aspx" | tee wayback_endpoints.txt
+```
+
+**Explanation:**
+- `gau` pulls URLs from various archives, including the Wayback Machine.
+- `grep` filters URLs for `.php`, `.asp`, or `.aspx` endpoints.
+- The results are saved in `wayback_endpoints.txt`.
+
+---
+
+### 25. **Check for JavaScript Leaks in External JS Files**
+This one-liner looks for hardcoded secrets like API keys in external JavaScript files.
+
+```bash
+echo $1 | gau | grep "\.js$" | xargs -I{} curl -s {} | grep -E "(api|key|secret|password|token)" | tee js_secrets.txt
+```
+
+**Explanation:**
+- The script fetches all JavaScript files from the target and searches for potential hardcoded secrets such as API keys or tokens.
+- Results are saved in `js_secrets.txt`.
+
+---
+
+### 26. **Check for SQL Injection in Parameters**
+This one-liner uses `sqlmap` to automate the testing of SQL injection on URLs that contain parameters.
+
+```bash
+cat urls_with_params.txt | xargs -I{} sqlmap -u {} --batch --level=5 --risk=3 --random-agent --output-dir=sqlmap_results
+```
+
+**Explanation:**
+- `sqlmap` is used to test SQL injection on URLs with parameters.
+- `--level=5` and `--risk=3` ensure thorough testing.
+- `--random-agent` randomizes the user agent for each request.
+- The results are saved in the `sqlmap_results` directory.
+
+---
+
+### 27. **Automated Google Dorking**
+This one-liner searches Google for publicly exposed sensitive information about a domain, such as passwords and configuration files.
+
+```bash
+dork="site:$1 ext:sql OR ext:db OR ext:bak OR ext:log OR ext:env OR ext:config" && curl -s "https://www.google.com/search?q=$dork" | tee google_dorks.txt
+```
+
+**Explanation:**
+- This performs Google dorking to find database files, backups, logs, environment files, and configurations that might be exposed.
+- The search results are saved in `google_dorks.txt`.
+
+---
+
+### 28. **Brute-Force Virtual Hosts**
+This one-liner brute-forces virtual hosts using `ffuf` and a wordlist.
+
+```bash
+ffuf -w /path/to/vhosts.txt -u https://$1 -H "Host: FUZZ.$1" -o vhost_bruteforce.txt
+```
+
+**Explanation:**
+- `ffuf` brute-forces subdomains (virtual hosts) by sending requests with different `Host` headers.
+- The results are saved in `vhost_bruteforce.txt`.
+
+---
+
+### 29. **Check for CORS Misconfigurations**
+This one-liner uses `curl` to check if a domain is vulnerable to CORS misconfigurations.
+
+```bash
+curl -s -I -X OPTIONS https://$1 -H "Origin: evil.com" -H "Access-Control-Request-Method: GET" | grep "Access-Control-Allow-Origin"
+```
+
+**Explanation:**
+- `curl` sends an `OPTIONS` request with a malicious `Origin` header (`evil.com`) to check if the server allows cross-origin requests from untrusted domains.
+- The response is checked for `Access-Control-Allow-Origin`.
+
+---
+
+### 30. **Extract Email Addresses from a Domain**
+This one-liner fetches URLs related to a domain and extracts email addresses.
+
+```bash
+echo $1 | gau | xargs -I{} curl -s {} | grep -oE "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}" | tee emails.txt
+```
+
+**Explanation:**
+- This script uses `gau` to gather URLs and then fetches the contents of each URL, searching for email addresses.
+- Results are saved in `emails.txt`.
+
+---
+
+### 31. **XSS Payload Injection into Parameters**
+This one-liner uses `ffuf` to inject XSS payloads into all parameters of a target URL.
+
+```bash
+ffuf -u https://$1/FUZZ -w /path/to/xss_payloads.txt -H "Host: $1" -o xss_injection.txt
+```
+
+**Explanation:**
+- `ffuf` injects a list of XSS payloads into a parameterized URL.
+- Results are saved in `xss_injection.txt`.
+
+---
+
+### 32. **Fuzzing for Parameter Pollution**
+This one-liner fuzzes URLs to test for parameter pollution vulnerabilities.
+
+```bash
+ffuf -u https://$1?FUZZ=value -w /path/to/parameters.txt -o param_pollution.txt
+```
+
+**Explanation:**
+- `ffuf` tests different parameters on a URL to check for parameter pollution, where duplicate parameters may bypass validation.
+- Results are saved in `param_pollution.txt`.
 
 ### `recon.sh` Script:
 
